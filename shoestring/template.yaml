@@ -1,0 +1,16 @@
+substitution:
+  paths:
+    - .firebaserc
+    - src/environments/environment.ts
+    - src/environments/environment.prod.ts
+
+quickLinks:
+  - description: ''
+    title: 'Firebase Guides'
+    url: 'https://firebase.google.com/docs/guides'
+  - description: ''
+    title: 'Angular Material Components'
+    url: 'https://material.angular.io/components/categories'
+  - description: 'Quick reference for all the icons that are available by default in Material Design'
+    title: 'Material Design Icons'
+    url: 'https://material.io/resources/icons/?icon=phone_iphone&style=baseline'

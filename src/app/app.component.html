@@ -1,0 +1,39 @@
+<mat-progress-bar *ngIf="progressBar" mode="indeterminate"
+  style="position: fixed; top: 0px; left: 0px; width: 100vw; z-index: 2000">
+</mat-progress-bar>
+<mat-toolbar class="toolbar">
+  <a routerLink="/" style="text-decoration: none; color: black">
+    {{title}}
+  </a>
+  <span style="flex: 1 1 auto;"></span>
+  <button mat-icon-button>
+    <mat-icon style="color: #7f7f7f" [matMenuTriggerFor]="main_menu">menu</mat-icon>
+  </button>
+  <mat-menu #main_menu="matMenu">
+    <button *ngIf="!user?.email" mat-menu-item (click)="signin()">
+      Sign in...
+    </button>
+    <button *ngIf="user?.email" mat-menu-item (click)="signout()">
+      Sign out
+    </button>
+    <div *ngIf="user?.email && profile.getProfile()" style="margin: 8px 16px 16px 16px">
+      <div style="font-size: 11px; margin-bottom: 2px; opacity: 0.7">Signed in as</div>
+      <div style="display: flex; margin-bottom: 5px">
+        <img *ngIf="profile.getProfile()?.photoURL?.length" [src]="profile.getProfile()?.photoURL"
+          style="width: 32px; height: 32px; object-fit: cover; border-radius: 19px; margin-right: 5px">
+        <div style="margin-top: 3px">
+          <div style="font-size: 13px; line-height: 14px">{{profile.getProfile()?.displayName}}</div>
+          <div style="font-size: 10px; line-height: 11px; opacity: 0.7">{{profile.getProfile()?.email}}</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size: 10px; opacity: 0.5; margin: 20px 15px 8px 15px; text-align: center; line-height: 12px">
+      <div>Build version</div>
+      <div>
+        {{buildInfo()}}
+      </div>
+    </div>
+  </mat-menu>
+</mat-toolbar>
+<div style="height: 64px; width: 100%"></div>
+<router-outlet></router-outlet>

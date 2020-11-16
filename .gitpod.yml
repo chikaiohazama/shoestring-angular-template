@@ -1,0 +1,32 @@
+ports:
+  - port: 5000
+    onOpen: ignore
+  - port: 5001
+    onOpen: ignore
+  - port: 5005
+    onOpen: ignore
+  - port: 4200
+
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - openIn: bottom
+  - openMode: split-right
+    command: |
+      tsc --build shared
+      cd functions
+      npm install
+      tsc --watch
+    name: tsc watch functions
+  - openMode: tab-after
+    command: |
+      echo n | npm install
+      ng serve --disable-host-check
+    name: ng serve
+  - openMode: tab-after
+    command: |
+      firebase login --no-localhost
+      firebase functions:config:get > functions/.runtimeconfig.json
+      firebase serve
+    name: firebase serve

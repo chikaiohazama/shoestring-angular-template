@@ -1,0 +1,73 @@
+# Deployment build config.
+
+timeout: '1200s'
+
+# Note: The following substitution variables are reserved and will be
+# overwritten by the Shoestring build system:
+# _BUILD_TARGET, _BUILD_TYPE, _CLONE_URL, _DEPLOY_TYPE,
+
+options:
+  substitution_option: 'ALLOW_LOOSE'
+
+steps:
+
+# Fetch builder image if it exists.
+# https://cloud.google.com/cloud-build/docs/speeding-up-builds
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker pull gcr.io/$PROJECT_ID/$REPO_NAME-builder:latest || exit 0
+  id: 'pull builder'
+
+# Clone repo.
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    git clone --no-checkout --branch=$BRANCH_NAME --depth=5 $_CLONE_URL .
+    git checkout $COMMIT_SHA
+  id: 'clone'
+  waitFor: ['-']
+
+# Update builder image with current dependencies.
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build',
+          '-f', 'shoestring/Dockerfile',
+          '-t', 'gcr.io/$PROJECT_ID/$REPO_NAME-builder:latest',
+          '--cache-from=gcr.io/$PROJECT_ID/$REPO_NAME-builder:latest',
+          '--target=deps',
+          '.' ]
+  id: 'sync deps'
+  waitFor: [ 'pull builder', 'clone' ]
+
+# # Run build for the `shared` TypeScript project used by both
+# # the frontend and Functions.
+# - name: 'gcr.io/$PROJECT_ID/$REPO_NAME-builder'
+#   args: [ 'npm run build:shared' ]
+#   id: 'build shared'
+#   waitFor: [ 'sync deps' ]
+
+# Run Cloud Functions build.
+- name: 'gcr.io/$PROJECT_ID/$REPO_NAME-builder'
+  args: [ 'npm --prefix=functions run build' ]
+  id: 'build functions'
+  # waitFor: [ 'build shared' ]
+  waitFor: [ 'sync deps' ]
+
+# Build frontend for deployment.
+- name: 'gcr.io/$PROJECT_ID/$REPO_NAME-builder'
+  env: [ 'SHORT_SHA=$SHORT_SHA', 'TAG_NAME=$TAG_NAME' ] # consumed by version.sh
+  args: [ 'npm run build:$_BUILD_TARGET' ]
+  id: 'build frontend'
+  # waitFor: [ 'build shared' ]
+  waitFor: [ 'sync deps' ]
+
+# Deploy.
+- name: 'gcr.io/$PROJECT_ID/$REPO_NAME-builder'
+  env: [ 'PROJECT_ID=$PROJECT_ID', 'SHORT_SHA=$SHORT_SHA', 'TAG_NAME=$TAG_NAME' ]
+  entrypoint: '/deploy.sh'
+  args: [ '$_DEPLOY_TYPE' ]
+  id: 'deploy'
